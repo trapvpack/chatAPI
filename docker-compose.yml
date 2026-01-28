@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: chat_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chatdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: chat_api
+    depends_on:
+      - db
+    environment:
+      GOOSE_DBSTRING: postgres://postgres:postgres@db:5432/chatdb?sslmode=disable
+    ports:
+      - "8081:8080"
+
+volumes:
+  db-data:
