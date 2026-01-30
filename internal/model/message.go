@@ -3,8 +3,8 @@ package model
 import "time"
 
 type Message struct {
-	Id        uint   `gorm:"primary_key"`
-	ChatId    uint   `gorm:"index"`
-	Text      string `gorm:"type:text not null"`
+	ID        uint   `gorm:"primaryKey"`
+	ChatID    uint   `gorm:"not null;index"`
+	Text      string `gorm:"size:5000;not null"`
 	CreatedAt time.Time
 }
