@@ -21,21 +21,34 @@ func main() {
 	if err := goose.Up(database.SQL_DB, "migrations"); err != nil {
 		panic(err)
 	}
-
-	http.HandleFunc("/chat", handler.CreateChat)
+	// TODO: simplify routing using mux
+	http.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handler.CreateChat(w, r)
+			return
+		}
+	})
 
 	http.HandleFunc("/chat/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/message") && r.Method == http.MethodPost {
-			handler.CreateMessage(w, r)
-			return
-		}
+		switch r.Method {
 
-		if r.Method == http.MethodGet {
+		case http.MethodGet:
 			handler.GetChat(w, r)
 			return
-		}
 
-		http.NotFound(w, r)
+		case http.MethodPost:
+			if strings.HasSuffix(r.URL.Path, "/message") {
+				handler.CreateMessage(w, r)
+				return
+			}
+			http.NotFound(w, r)
+			return
+		case http.MethodDelete:
+			handler.DeleteChat(w, r)
+		default:
+			http.NotFound(w, r)
+		}
 	})
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
