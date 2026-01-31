@@ -20,7 +20,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatID, err := strconv.Atoi(parts[2]) // <-- правильный индекс
+	chatID, err := strconv.Atoi(parts[2])
 	if err != nil || chatID <= 0 {
 		http.Error(w, "Invalid chat ID", http.StatusBadRequest)
 		return
