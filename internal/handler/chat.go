@@ -67,7 +67,6 @@ func GetChat(w http.ResponseWriter, r *http.Request) {
 			limit = val
 		}
 	}
-
 	var chat model.Chat
 	if err := database.GORM_DB.Preload("Messages", func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at desc").Limit(limit)
@@ -78,4 +77,30 @@ func GetChat(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(chat)
+}
+
+func DeleteChat(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) != 3 {
+		http.NotFound(w, r)
+		return
+	}
+
+	chatID, err := strconv.Atoi(parts[2])
+	if err != nil || chatID <= 0 {
+		http.Error(w, "invalid chat ID", http.StatusBadRequest)
+		return
+	}
+
+	var chat model.Chat
+
+	res := database.GORM_DB.Delete(&chat, chatID)
+
+	if res.RowsAffected == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
