@@ -2,42 +2,37 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"chatAPI/internal/db"
-	"chatAPI/internal/model"
-
-	"gorm.io/gorm"
+	"chatAPI/internal/usecase"
 )
+
+type ChatHandler struct {
+	uc *usecase.ChatUsecase
+}
+
+func NewChatHandler(uc *usecase.ChatUsecase) *ChatHandler {
+	return &ChatHandler{uc: uc}
+}
 
 type createChatRequest struct {
 	Title string `json:"title"`
 }
 
-func CreateChat(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (h *ChatHandler) CreateChat(w http.ResponseWriter, r *http.Request) {
 	var req createChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
-	if req.Title == "" {
-		http.Error(w, "title is required", http.StatusBadRequest)
-		return
-	}
-
-	chat := model.Chat{
-		Title: req.Title,
-	}
-
-	if err := database.GORM_DB.Create(&chat).Error; err != nil {
+	chat, err := h.uc.CreateChat(r.Context(), req.Title)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidTitle) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -47,30 +42,17 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(chat)
 }
 
-func GetChat(w http.ResponseWriter, r *http.Request) {
-
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 3 {
-		http.NotFound(w, r)
+func (h *ChatHandler) GetChat(w http.ResponseWriter, r *http.Request) {
+	id, err := parseChatID(r.URL.Path)
+	if err != nil {
+		http.Error(w, "invalid chat id", http.StatusBadRequest)
 		return
 	}
 
-	chatID, err := strconv.Atoi(parts[2])
-	if err != nil || chatID <= 0 {
-		http.Error(w, "invalid chat ID", http.StatusBadRequest)
-		return
-	}
+	limit := parseLimit(r)
 
-	limit := 20
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if val, err := strconv.Atoi(l); err == nil && val > 0 && val <= 100 {
-			limit = val
-		}
-	}
-	var chat model.Chat
-	if err := database.GORM_DB.Preload("Messages", func(db *gorm.DB) *gorm.DB {
-		return db.Order("created_at desc").Limit(limit)
-	}).First(&chat, chatID).Error; err != nil {
+	chat, err := h.uc.GetChat(r.Context(), id, limit)
+	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
@@ -79,25 +61,14 @@ func GetChat(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(chat)
 }
 
-func DeleteChat(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path, "/")
-
-	if len(parts) != 3 {
-		http.NotFound(w, r)
+func (h *ChatHandler) DeleteChat(w http.ResponseWriter, r *http.Request) {
+	id, err := parseChatID(r.URL.Path)
+	if err != nil {
+		http.Error(w, "invalid chat id", http.StatusBadRequest)
 		return
 	}
 
-	chatID, err := strconv.Atoi(parts[2])
-	if err != nil || chatID <= 0 {
-		http.Error(w, "invalid chat ID", http.StatusBadRequest)
-		return
-	}
-
-	var chat model.Chat
-
-	res := database.GORM_DB.Delete(&chat, chatID)
-
-	if res.RowsAffected == 0 {
+	if err := h.uc.DeleteChat(r.Context(), id); err != nil {
 		http.NotFound(w, r)
 		return
 	}

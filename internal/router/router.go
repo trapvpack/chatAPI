@@ -1,7 +1,10 @@
 package router
 
 import (
+	database "chatAPI/internal/db"
 	"chatAPI/internal/handler"
+	"chatAPI/internal/repository"
+	"chatAPI/internal/usecase"
 	"net/http"
 	"strings"
 )
@@ -9,9 +12,14 @@ import (
 func New() *http.ServeMux {
 	mux := http.NewServeMux()
 
+	repo := repository.NewChatRepository(database.GORM_DB)
+	uc := usecase.NewChatUsecase(repo)
+	chatHandler := handler.NewChatHandler(uc)
+
 	mux.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
+
 		if r.Method == http.MethodPost {
-			handler.CreateChat(w, r)
+			chatHandler.CreateChat(w, r)
 			return
 		}
 		http.NotFound(w, r)
@@ -21,11 +29,11 @@ func New() *http.ServeMux {
 		switch r.Method {
 
 		case http.MethodGet:
-			handler.GetChat(w, r)
+			chatHandler.GetChat(w, r)
 			return
 
 		case http.MethodDelete:
-			handler.DeleteChat(w, r)
+			chatHandler.DeleteChat(w, r)
 			return
 
 		case http.MethodPost:
