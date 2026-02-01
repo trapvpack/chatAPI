@@ -1,9 +1,11 @@
 ### Test chatAPI app on Go, with Goose and GORM
 
 #### Currently implemented:
-- Connecting to PostgreSQL via GORM
-- Database migration via Goose
-- Docker for containerizing databases and applications
+- HTTP API on `net/http`
+- PostgreSQL support via GORM
+- Database migrations using Goose
+- Docker/docker-compose for the application and database
+- Basic architecture with layering (handler/usecase/repository)
 
 #### Requirements:
 - Go 1.24
@@ -16,3 +18,4 @@
 - `source env/goose.env` (`goose.env` pushed in repo to simplify building)
 - `docker-compose up --build`
 - `docker-compose logs app`
+
