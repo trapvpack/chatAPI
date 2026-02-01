@@ -16,7 +16,7 @@ func New() *http.ServeMux {
 	uc := usecase.NewChatUsecase(repo)
 	chatHandler := handler.NewChatHandler(uc)
 
-	mux.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodPost {
 			chatHandler.CreateChat(w, r)
@@ -25,7 +25,7 @@ func New() *http.ServeMux {
 		http.NotFound(w, r)
 	})
 
-	mux.HandleFunc("/chat/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/chats/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 
 		case http.MethodGet:
@@ -37,7 +37,7 @@ func New() *http.ServeMux {
 			return
 
 		case http.MethodPost:
-			if strings.HasSuffix(r.URL.Path, "/message") {
+			if strings.HasSuffix(r.URL.Path, "/messages") {
 				handler.CreateMessage(w, r)
 				return
 			}
